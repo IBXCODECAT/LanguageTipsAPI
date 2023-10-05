@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using LanguageTipsAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LanguageTipsAPI.Controllers;
 
@@ -14,7 +14,7 @@ public class TipsController : ControllerBase
     public TipsController()
     {
         Console.WriteLine($"{Directory.GetCurrentDirectory()}/Resources/tips.json");
-        
+
         // Read tips from the JSON file and deserialize them into a list
         string json = System.IO.File.ReadAllText($"{Directory.GetCurrentDirectory()}/Resources/tips.json");
         _tips = JsonConvert.DeserializeObject<List<TipModel>>(json) ?? new List<TipModel>();
@@ -22,6 +22,7 @@ public class TipsController : ControllerBase
 
 
     [HttpGet("random")]
+    [EnableRateLimiting("GlobalRateLimit")]
     public ActionResult<TipModel> GetRandomTip()
     {
         if (_tips.Count == 0)
@@ -35,5 +36,20 @@ public class TipsController : ControllerBase
 
         // Return the randomly selected tip
         return _tips[randomIndex];
+    }
+
+    //Get tip by id
+    [HttpGet("{id}")]
+    [EnableRateLimiting("GlobalRateLimit")]
+    public ActionResult<TipModel> GetTipById(int id)
+    {
+        var tip = _tips.FirstOrDefault(t => t.Id == id);
+
+        if (tip == null)
+        {
+            return NotFound("Tip not found.");
+        }
+
+        return tip;
     }
 }
